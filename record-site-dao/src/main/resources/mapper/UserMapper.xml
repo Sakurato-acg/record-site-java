@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.recordsite.mapper.system.UserMapper">
+
+
+    <select id="getNickNameByIdWithCondition" resultType="java.lang.String">
+        select nick_name
+        from sys_user
+        where id = #{id}
+          and status = 0
+          and del_flag = 0
+    </select>
+    <select id="getAdminUserList" resultMap="AdminUser">
+        select
+        u.id,
+        u.user_name,
+        u.nick_name,
+        u.email,
+        u.status,
+        u.url,
+        u.avatar,
+        u.create_time,
+        CASE
+        ( r.del_flag )
+        WHEN ( 0 ) THEN
+        ( r.role_name )
+        WHEN ( 1 ) THEN
+        ( NULL )
+        END
+        AS 'roleName',
+        CASE
+        ( r.del_flag )
+        WHEN ( 0 ) THEN
+        ( r.status )
+        WHEN ( 1 ) THEN
+        ( NULL )
+        END
+        AS 'roleStatus'
+        from sys_user u
+        left join sys_user_role ur on u.id=ur.user_id
+        left join sys_role r on ur.role_id=r.id
+        where u.del_flag=0
+        <if test="userName!=null and userName.length>0">
+            and u.user_name like concat('%',#{userName},'%')
+        </if>
+        <if test="nickName!=null and nickName.length>0">
+            and u.nick_name like concat('%',#{nickName},'%')
+        </if>
+        <if test="email!=null and email.length>0">
+            and u.email like concat('%',#{email},'%')
+        </if>
+        <if test="status!=null and status >=0">
+            and u.status=#{status}
+        </if>
+        <if test="roleName!=null and roleName.length>0">
+            and r.role_name like concat('%',#{roleName},'%')
+        </if>
+        order by r.id ,u.create_time desc
+        limit #{skip},#{limit}
+    </select>
+    <select id="getAdminUserListCount" resultType="java.lang.Long">
+        select
+        count(*)
+        from sys_user u
+        left join sys_user_role ur on u.id=ur.user_id
+        left join sys_role r on ur.role_id=r.id
+        where u.del_flag=0
+        <if test="userName!=null and userName.length>0">
+            and u.user_name like concat('%',#{userName},'%')
+        </if>
+        <if test="nickName!=null and nickName.length>0">
+            and u.nick_name like concat('%',#{nickName},'%')
+        </if>
+        <if test="email!=null and email.length>0">
+            and u.email like concat('%',#{email},'%')
+        </if>
+        <if test="status!=null and status >=0">
+            and u.status=#{status}
+        </if>
+        <if test="roleName!=null and roleName.length>0">
+            and r.role_name like concat('%',#{roleName},'%')
+        </if>
+    </select>
+    <resultMap id="AdminUser" type="top.recordsite.vo.system.AdminUserVo">
+        <id column="id" property="id"/>
+        <result column="user_name" property="userName"/>
+        <result column="nick_name" property="nickName"/>
+        <result column="email" property="email"/>
+        <result column="status" property="status"/>
+        <result column="url" property="url"/>
+        <result column="avatar" property="avatar"/>
+        <result column="create_time" property="createTime"/>
+        <association property="role" javaType="top.recordsite.entity.system.Role">
+            <id column="roleId" property="id" />
+            <result column="roleName" property="roleName"/>
+            <result column="roleStatus" property="status"/>
+        </association>
+    </resultMap>
+
+    <select id="getAdminUserInfo" resultType="top.recordsite.vo.system.AdminUserVo">
+        select u.id,
+               u.user_name,
+               u.nick_name,
+               u.email,
+               u.status,
+               u.url,
+               u.avatar,
+               u.create_time,
+               IFNULL(r.id,null) roleId,
+               IFNULL(r.role_name,null) roleName
+        from sys_user u
+                 left join sys_user_role ur on u.id = ur.user_id
+                 left join sys_role r on ur.role_id = r.id
+        where u.del_flag = 0
+          and u.id = #{userId}
+          and r.del_flag=0
+#           and r.status=0
+    </select>
+    <select id="getUserSimpleInfo" resultType="top.recordsite.vo.system.UserSimpleVo">
+        select u.id,
+               u.nick_name,
+               u.avatar
+        from sys_user u
+                 left join sys_user_role ur on u.id = ur.user_id
+                 left join sys_role r on ur.role_id = r.id
+        where u.del_flag = 0
+          and u.id = #{userId}
+          and r.status=0
+          and r.del_flag=0
+    </select>
+
+</mapper>
+        <!--        #         if(r.status=0 and r.del_flag=0,r.role_name,null) 'roleName'-->

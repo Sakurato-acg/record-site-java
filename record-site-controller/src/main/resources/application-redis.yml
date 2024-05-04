@@ -1,0 +1,13 @@
+spring:
+  redis:
+    database: 1
+    client-type: lettuce
+    redisson:
+      config:
+        singleServerConfig:
+            address: redis://127.0.0.1:6379
+            database: 1
+
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfiguration

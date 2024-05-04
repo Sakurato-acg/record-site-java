@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.recordsite.mapper.blog.BlogTagMapper">
+
+<!--    <select id="getTagByArticleIdWithCondition" resultType="top.recordsite.vo.blog.article.FrontBlogArticleTagVo">-->
+<!--        select t.id, t.name, t.count-->
+<!--        from blog_tag t-->
+<!--                 join blog_article_tag at on t.id = at.tag_id-->
+<!--        where at.article_id = #{id}-->
+<!--          and t.status = 0-->
+<!--          and t.del_flag = 0-->
+<!--    </select>-->
+    <select id="getFrontTagList" resultType="top.recordsite.entity.blog.BlogTag">
+        select
+               t.id,
+               t.name
+        from blog_category c
+            join blog_article a on c.id=a.category_id
+            join sys_user u on a.create_by=u.id
+            join blog_article_tag at on a.id=at.article_id
+            join blog_tag t on at.tag_id=t.id
+        where c.status = 0
+          and c.del_flag = 0
+          and a.status=1
+          and a.del_flag=0
+          and u.status=0
+          and u.del_flag=0
+          and t.del_flag=0
+          <if test="categoryName">
+              and c.name=#{categoryName}
+          </if>
+        group by t.id
+        having sum(t.status)=0
+        <if test="pageSize!=null and pageSize>0">
+            limit #{pageSize}
+        </if>
+    </select>
+    <select id="getTagListCount" resultType="java.lang.Integer">
+        select count(distinct t.id)
+        from blog_tag t
+            left join  blog_article_tag at on t.id=at.tag_id
+            join blog_article a on at.article_id=a.id
+            join blog_category c on a.category_id=c.id
+        where  t.del_flag = 0
+        <if test="status!=null">
+            and t.status=#{status}
+        </if>
+        <if test="categoryName">
+            and c.name=#{categoryName}
+            and c.status=0
+            and c.del_flag=0
+        </if>
+    </select>
+    <select id="getTagSelectList" resultType="top.recordsite.entity.blog.BlogTag">
+        select id,name
+        from blog_tag t
+        where del_flag=0 and status=0
+
+    </select>
+    <select id="getAdminTagList" resultType="top.recordsite.vo.blog.BlogTagCountVo">
+        select
+        t.id,
+        t.name,
+        t.status,
+        count(distinct a.id) as 'count'
+        from blog_category c
+        left join blog_article a on c.id=a.category_id
+        left join sys_user u on a.create_by=u.id
+        left join blog_article_tag at on a.id=at.article_id
+        right join blog_tag t on at.tag_id=t.id
+        where  t.del_flag = 0
+        and (a.status=1 or a.status is null )
+        and (a.del_flag=0 or a.status is null)
+        and (u.status=0 or u.status is null )
+        and (u.del_flag=0 or u.del_flag is null)
+        and (c.del_flag=0 or c.del_flag is null)
+        <if test="dto.name!=null">
+            and t.name like concat('%',#{dto.name},'%')
+        </if>
+        <if test="dto.status!=null">
+            and t.status=#{dto.status}
+        </if>
+        group by t.id
+        limit #{skip},#{limit}
+    </select>
+    <select id="getTagById" resultType="top.recordsite.vo.blog.BlogTagCountVo">
+        select
+            t.id,
+            t.name,
+            t.status
+        from blog_tag t
+        where t.del_flag=0
+          and t.id=#{id}
+    </select>
+
+</mapper>
+<!--
+        if(sum(t.status)=0,count(distinct a.id),0) as 'count'
+
+-->

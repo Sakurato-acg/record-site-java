@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.recordsite.mapper.blog.CommentMapper">
+
+    <!-- <select id="getArticleParentComment" resultType="top.recordsite.vo.blog.CommentVo">
+         select bc.id,
+                bc.article_id,
+                bc.content,
+                bc.like_count,
+                bc.location,
+                bc.parent_id,
+                bc.recover_id,
+                bc.create_time,
+                u.user_name createBy,
+                u.avatar,
+                u.url
+         from blog_comment bc
+                  join sys_user u on bc.create_by = u.id
+         where bc.del_flag = 0
+           and bc.article_id = #{id}
+           and bc.parent_id = -1
+           and u.del_flag = 0
+           and u.status = 0
+         limit #{skip},#{pageSize}
+     </select>
+     <select id="getChildComment" resultType="top.recordsite.vo.blog.CommentVo">
+         SELECT t1.*,
+                u.user_name recoverUsername
+         FROM (
+                  SELECT bc.id,
+                         bc.article_id,
+                         bc.content,
+                         bc.like_count,
+                         bc.location,
+                         bc.parent_id,
+                         bc.recover_id,
+                         bc.create_time,
+                         u.user_name createBy,
+                         u.avatar,
+                         u.url
+                  FROM blog_comment bc
+                           JOIN sys_user u ON bc.create_by = u.id
+                  WHERE bc.del_flag = 0
+                    AND bc.article_id = #{id}
+                    AND bc.parent_id = #{parentId}
+              ) t1
+                  JOIN blog_comment t2 ON t1.recover_id = t2.id
+                  JOIN sys_user u on u.id = t2.create_by
+     </select>-->
+    <select id="getCommentList" resultType="top.recordsite.vo.blog.CommentVo">
+        SELECT bc1.id,
+               bc1.article_id,
+               bc1.content,
+               bc1.like_count,
+               bc1.location,
+               bc1.parent_id,
+               bc1.recover_id,
+               bc1.create_time,
+               u1.nick_name createBy,
+               u1.avatar,
+               u1.url,
+               u2.nick_name recoverUserName
+        FROM blog_comment bc1
+                 JOIN sys_user u1 ON bc1.create_by = u1.id
+                 LEFT JOIN blog_comment bc2 on bc1.recover_id = bc2.id
+                 LEFT JOIN sys_user u2 on bc2.create_by = u2.id
+        WHERE (
+                    bc1.id IN (
+                    SELECT one.*
+                    FROM (
+                             SELECT one.id
+                             FROM blog_comment one
+                                      JOIN sys_user u1 ON one.create_by = u1.id
+                             WHERE one.del_flag = 0
+                               AND one.type = #{type}
+                               AND one.article_id = #{id}
+                               AND one.parent_id = - 1
+                               AND u1.del_flag = 0
+                               AND u1.status = 0
+                             LIMIT #{skip}, #{pageSize}
+                         ) one
+                )
+                OR bc1.parent_id IN (
+                SELECT one.*
+                FROM (
+                         SELECT one.id
+                         FROM blog_comment one
+                                  JOIN sys_user u1 ON one.create_by = u1.id
+                         WHERE one.del_flag = 0
+                           AND one.type = #{type}
+                           AND one.article_id = #{id}
+                           AND one.parent_id = - 1
+                           AND u1.del_flag = 0
+                           AND u1.status = 0
+                         LIMIT #{skip}, #{pageSize}
+                     ) one
+            ))
+          and u1.del_flag = 0
+          and u1.status = 0
+    </select>
+    <select id="getCommentListCount" resultType="java.lang.Long">
+        select count(*)
+        from blog_comment bc
+        join sys_user u on bc.create_by=u.id
+        where bc.del_flag=0
+        and bc.type=#{type}
+        and u.del_flag=0
+        and u.status=0
+        and bc.article_id=#{id}
+        <if test="parentId!=null">
+            AND bc.parent_id=#{parentId}
+        </if>
+
+    </select>
+</mapper>

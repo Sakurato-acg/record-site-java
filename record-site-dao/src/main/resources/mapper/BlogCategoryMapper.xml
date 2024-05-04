@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.recordsite.mapper.blog.BlogCategoryMapper">
+
+    <select id="getFrontCategoryList" resultType="top.recordsite.vo.blog.BlogCategoryCountVo">
+        select
+               c.id,
+               c.name,
+               if(sum(t.status)=0,count(distinct a.id),0) as 'count'
+        from blog_category c
+            left join blog_article a on c.id=a.category_id
+            left join sys_user u on a.create_by=u.id
+            left join blog_article_tag at on a.id=at.article_id
+            left join blog_tag t on at.tag_id=t.id
+        where (c.status = 0 or c.status is null)
+          and (c.del_flag = 0 or c.del_flag is null)
+          and (a.status=1 or a.status  is null)
+          and (a.del_flag=0 or a.del_flag  is null)
+          and (u.status=0 or u.status  is null)
+          and (u.del_flag=0 or u.del_flag  is null)
+          and (t.del_flag=0 or t.del_flag  is null)
+        group by c.id
+        <if test="pageSize!=null">
+            limit #{pageSize}
+        </if>
+    </select>
+
+    <select id="getCategoryListCount" resultType="java.lang.Integer">
+        select COUNT(*)
+        from blog_category
+        where  del_flag = 0
+        <if test="status!=null">
+            and status=#{status}
+        </if>
+    </select>
+    <select id="getCategorySelectList" resultType="top.recordsite.entity.blog.BlogCategory">
+       select id,name
+       from blog_category c
+       where
+             status=0
+         and del_flag=0
+
+    </select>
+    <select id="getAdminCategoryList" resultType="top.recordsite.vo.blog.BlogCategoryCountVo">
+        select
+            c.id,
+            c.name,
+            c.status,
+            if(sum(t.status)=0,count(distinct a.id),0) as 'count'
+        from blog_category c
+                 left join blog_article a on c.id=a.category_id
+                 left join sys_user u on a.create_by=u.id
+                 left join blog_article_tag at on a.id=at.article_id
+                 left join blog_tag t on at.tag_id=t.id
+        where  c.del_flag = 0
+          and (a.status=1 or a.status is null )
+          and (a.del_flag=0 or a.status is null)
+          and (u.status=0 or u.status is null )
+          and (u.del_flag=0 or u.del_flag is null)
+          and (t.del_flag=0 or t.del_flag is null)
+        <if test="dto.name!=null">
+            and c.name like concat('%',#{dto.name},'%')
+        </if>
+        <if test="dto.status!=null">
+            and c.status=#{dto.status}
+        </if>
+        group by c.id
+        limit #{skip},#{limit}
+    </select>
+    <select id="getCategoryById" resultType="top.recordsite.vo.blog.BlogCategoryCountVo">
+        select
+               c.id,
+               c.name,
+               c.status
+        from blog_category c
+        where c.del_flag=0
+          and c.id=#{id}
+    </select>
+
+    <!--    <select id="getCategoryVoByIdWithCondition"-->
+<!--            resultType="top.recordsite.vo.blog.article.FrontBlogArticleCategoryVo">-->
+<!--        select id, name, count-->
+<!--        from blog_category-->
+<!--        where id = #{id}-->
+<!--          and status = 0-->
+<!--          and del_flag = 0-->
+<!--    </select>-->
+
+</mapper>

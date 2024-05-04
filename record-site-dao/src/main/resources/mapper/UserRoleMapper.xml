@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.recordsite.mapper.system.UserRoleMapper">
+
+    <select id="getUserIdsByMenuId" resultType="java.lang.Integer">
+        select distinct ur.user_id
+        from sys_user_role ur
+                 join sys_role_menu rm on ur.role_id = rm.role_id
+                 join sys_menu m on rm.menu_id = m.id
+        where m.id = #{id}
+    </select>
+</mapper>

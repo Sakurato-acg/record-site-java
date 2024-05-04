@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.recordsite.mapper.blog.BlogArticleMapper">
+
+    <resultMap id="FrontArticleMap" type="top.recordsite.vo.blog.article.FrontBlogArticleVo">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="createTime" column="create_time"/>
+        <result property="isTop" column="is_top"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="content" column="content"/>
+        <association property="author" javaType="top.recordsite.entity.User">
+            <id property="id" column="user_id"/>
+            <result property="nickName" column="nick_name"/>
+        </association>
+        <association property="category" javaType="top.recordsite.entity.blog.BlogCategory">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+        </association>
+        <collection property="tags" ofType="top.recordsite.entity.blog.BlogTag" >
+            <id property="id" column="tag_id" />
+            <result property="name" column="tag_name"/>
+        </collection>
+    </resultMap>
+    <resultMap id="FrontArticleGroupMap" type="top.recordsite.vo.blog.article.FrontBlogArticleMapperVo">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="createTime" column="create_time"/>
+        <result property="isTop" column="is_top"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="content" column="content"/>
+        <result property="tagNames"  column="tag_name" javaType="java.lang.String"/>
+        <result property="tagIds"  column="tag_id" javaType="java.lang.String"/>
+        <association property="author" javaType="top.recordsite.entity.User">
+            <id property="id" column="user_id"/>
+            <result property="nickName" column="nick_name"/>
+        </association>
+        <association property="category" javaType="top.recordsite.entity.blog.BlogCategory">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+        </association>
+
+    </resultMap>
+    <resultMap id="AdminArticleMap" type="top.recordsite.vo.blog.article.AdminBlogArticleVo">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="isTop" column="is_top"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="status" column="status"/>
+        <result property="content" column="content"/>
+        <association property="author" javaType="top.recordsite.entity.User">
+            <id property="id" column="user_id"/>
+            <result property="nickName" column="nick_name"/>
+            <result property="status" column="user_status"/>
+        </association>
+        <association property="category" javaType="top.recordsite.entity.blog.BlogCategory">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+            <result property="status" column="category_status"/>
+        </association>
+        <collection property="tags" ofType="top.recordsite.entity.blog.BlogTag">
+            <id property="id" column="tag_id"/>
+            <result property="name" column="tag_name"/>
+            <result property="status" column="tag_status"/>
+        </collection>
+    </resultMap>
+
+    <select id="getFrontArticleByPageWithCondition"  resultMap="FrontArticleGroupMap">
+        SELECT
+            a.id,
+            a.title,
+            u.nick_name as 'nick_name',
+            a.create_time,
+            a.is_top,
+            c.id AS 'category_id',
+            c.NAME 'category_name',
+            GROUP_CONCAT(t.id) as 'tag_id',
+            GROUP_CONCAT(t.`name`) 'tag_name'
+        FROM
+            blog_article a
+                JOIN blog_category c ON a.category_id = c.id
+                JOIN sys_user u ON a.create_by = u.id
+                JOIN blog_article_tag AT ON a.id = AT.article_id
+                JOIN blog_tag t ON AT.tag_id = t.id
+        WHERE
+            a.STATUS = 1
+          AND a.del_flag = 0
+          AND c.STATUS = 0
+          AND c.del_flag = 0
+        <if test="dto.categoryName">
+            and c.name=#{dto.categoryName}
+        </if>
+          AND u.del_flag = 0
+          AND u.STATUS = 0
+          AND t.del_flag = 0
+        GROUP BY
+            a.id
+        HAVING
+            SUM(t.`status`)=0
+            <if test="dto.tagName">
+                and GROUP_CONCAT(t.`name`) like concat('%',#{dto.tagName},'%')
+            </if>
+        order by a.is_top desc, a.create_time DESC
+        LIMIT #{skip},#{limit}
+    </select>
+    <select id="getFrontArticleById" resultMap="FrontArticleMap">
+        select a.id,
+               a.title,
+               u.nick_name as 'nick_name',
+               a.create_time,
+               a.is_top,
+               a.content,
+               c.id    AS  'category_id',
+               c.name      'category_name',
+               t.id    as  'tag_id',
+               t.name  as  'tag_name',
+               t.status as tag_status
+        from blog_article a
+                 join blog_category c on a.category_id = c.id
+                 join sys_user u on a.create_by = u.id
+                 join blog_article_tag at on a.id = at.article_id
+                 join blog_tag t on at.tag_id = t.id
+        where a.status = 1
+          and a.del_flag = 0
+          and c.status = 0
+          and c.del_flag = 0
+          and u.del_flag = 0
+          and u.status = 0
+          and t.del_flag = 0
+          and a.id = #{id}
+    </select>
+    <select id="getFrontArticleCountWithCondition" resultType="java.lang.Long">
+        select count(*)
+        from (
+              select t1.a_id
+              from
+              (select a.id 'a_id'
+
+               from blog_article a
+                        join blog_category c on a.category_id = c.id
+                        join sys_user u on a.create_by = u.id
+               where a.status = 1
+                 and a.del_flag = 0
+                 and c.status = 0
+                 and c.del_flag = 0
+                 and u.del_flag = 0
+                 and u.status = 0
+                 <if test="dto.categoryName!=null">
+                     and c.name=#{dto.categoryName}
+                 </if>
+              ) t1
+                 join blog_article_tag at on t1.a_id = at.article_id
+                 join blog_tag t on at.tag_id = t.id
+            where t.del_flag = 0
+            <if test="dto.tagName!=null">
+                and t.name=#{dto.tagName}
+            </if>
+            group by t1.a_id
+            having sum(t.status)=0
+        )t
+    </select>
+
+    <select id="articleExist" resultType="java.lang.Boolean">
+        select count(*)
+        from blog_article a
+                 join blog_category c on a.category_id = c.id
+                 join sys_user u on a.create_by = u.id
+                 join blog_article_tag at on a.id = at.article_id
+                 join blog_tag t on at.tag_id = t.id
+        where a.status = 1
+          and a.del_flag = 0
+          and c.status = 0
+          and c.del_flag = 0
+          and u.del_flag = 0
+          and u.status = 0
+          and t.status = 0
+          and t.del_flag = 0
+          and a.id = #{id}
+    </select>
+    <select id="getAdminArticleByPage" resultMap="AdminArticleMap">
+        select
+               t1.*,
+               t.id as 'tag_id',
+               t.name as 'tag_name',
+               t.status as 'tag_status'
+        from
+            (
+                select
+                       a.id,
+                       a.title,
+                       a.create_time,
+                       a.update_time,
+                       a.is_top,
+                       a.view_count,
+                       a.status,
+                       u.id 'user_id',
+                       u.nick_name ,
+                       u.status 'user_status',
+                       c.id AS 'category_id',
+                       c.name 'category_name',
+                       c.status 'category_status'
+                from blog_article a
+                    join blog_category c on a.category_id = c.id
+                    join sys_user u on a.create_by = u.id
+                where
+                      a.del_flag = 0
+                  and c.del_flag = 0
+                  and u.del_flag = 0
+                <if test="userId!=null">
+                  and u.id=#{userId}
+                </if>
+                <if test="dto.title!=null">
+                  and a.title like concat('%',#{dto.title},'%')
+                </if>
+                <if test="dto.author!=null">
+                  and u.nick_name like concat('%',#{dto.author},'%')
+                </if>
+                <if test="dto.status!=null">
+                  and a.status=#{dto.status}
+                </if>
+                <if test="dto.isTop!=null">
+                  and a.is_top=#{dto.isTop}
+                </if>
+                <if test="dto.categoryId!=null">
+                  and c.id=#{dto.categoryId}
+                </if>
+                order by a.create_time desc
+                limit #{skip},#{limit}
+        )
+        t1
+            join blog_article_tag at on t1.id = at.article_id
+            join blog_tag t on at.tag_id = t.id
+        where t.del_flag = 0
+        order by t1.create_time desc
+
+    </select>
+    <select id="getAdminArticleCount" resultType="java.lang.Long">
+        select count(distinct t1.id)
+        from (select a.id,
+        a.title,
+        u.nick_name 'username',
+        a.is_top,
+        a.content,
+        a.status,
+        c.id AS 'category_id',
+        c.name 'category_name'
+        from blog_article a
+        join blog_category c on a.category_id = c.id
+        join sys_user u on a.create_by = u.id
+        where a.del_flag = 0
+        and c.del_flag = 0
+        and u.del_flag = 0
+        <if test="userId!=null">
+            and u.id=#{userId}
+        </if>
+        <if test="dto.title!=null">
+            and a.title like concat('%',#{dto.title},'%')
+        </if>
+        <if test="dto.author!=null">
+            and u.nick_name like concat('%',#{dto.author},'%')
+        </if>
+        <if test="dto.status!=null">
+            and a.status=#{dto.status}
+        </if>
+        <if test="dto.isTop!=null">
+            and a.is_top=#{dto.isTop}
+        </if>
+        <if test="dto.categoryId!=null">
+            and c.id=#{dto.categoryId}
+        </if>
+        ) t1
+        join blog_article_tag at on t1.id = at.article_id
+        join blog_tag t on at.tag_id = t.id
+        where t.del_flag = 0
+        <if test="dto.tagIds!=null">
+            and t.id in
+            <foreach collection="dto.tagIds" item="id" separator="," open="(" close=")">
+                #{id}
+            </foreach>
+        </if>
+    </select>
+    <select id="getAdminArticleById" resultMap="AdminArticleMap">
+        select a.id,
+               a.title,
+               a.create_time,
+               a.is_top,
+               a.view_count,
+               a.content,
+               a.status,
+               if(c.status=0,c.id,null) AS  'category_id',
+               if(t.status=0,t.id,null) as  'tag_id',
+               u.id user_id
+        from blog_article a
+                 join blog_category c on a.category_id = c.id
+                 join sys_user u on a.create_by = u.id
+                 join blog_article_tag at on a.id = at.article_id
+                 join blog_tag t on at.tag_id = t.id
+        where a.del_flag = 0
+          and c.del_flag = 0
+          and u.del_flag = 0
+          and u.status = 0
+          and t.del_flag = 0
+          and a.id = #{id}
+    </select>
+
+</mapper>
+
+
+<!--
+
+     select
+               t1.*,
+               t.id    as 'tag_id',
+               t.name  as 'tag_name',
+               t.status as 'tag_status'
+        from (
+            select   a.id,
+                     a.title,
+                     u.nick_name 'nick_name',
+                     a.create_time,
+                     a.is_top,
+                     a.view_count,
+                     c.id AS     'category_id',
+                     c.name      'category_name'
+              from blog_article a
+                       join blog_category c on a.category_id = c.id
+                       join sys_user u on a.create_by = u.id
+                       <if test="dto.tagName!=null">
+                       join blog_article_tag at on a.id = at.article_id
+                       join blog_tag t on at.tag_id = t.id
+                       </if>
+              where a.status = 1
+                and a.del_flag = 0
+                and c.status = 0
+                and c.del_flag = 0
+                and u.del_flag = 0
+                and u.status = 0
+                <if test="dto.categoryName!=null">
+                and c.name = #{dto.categoryName}
+                </if>
+                <if test="dto.tagName!=null">
+                and t.name = #{dto.tagName}
+                </if>
+              order by a.is_top desc,a.create_time desc
+              limit #{skip},#{limit}) t1
+                 join blog_article_tag at on t1.id = at.article_id
+                 join blog_tag t on at.tag_id = t.id
+        where  t.del_flag = 0
+        order by t1.is_top desc,t1.create_time desc
+-->

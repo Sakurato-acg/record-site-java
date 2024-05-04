@@ -1,0 +1,9 @@
+oss:
+  qiniu:
+    accessKey: -il9NbJWng-Zr07xopL0nnwP4mEeWx_Trpmfh2BX
+    secretKey: jO7XxZLwTkHOrE2GDvYtX3oFLFwarldwezf9WhzK
+    bucket: record-site
+    url: http://s7jzpkmvn.hd-bkt.clouddn.com/
+  aliyun:
+    name: "test"
+    age: 13
